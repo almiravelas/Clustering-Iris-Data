@@ -77,7 +77,7 @@ class KMeans(object):
             # Hint: Use the get_euclidean_distance() function that we have
             # defined in this class.
             for j in range(len(self.centroids)):
-                pass
+                distances[j] = self.get_euclidean_distance(sliced_data, self.centroids.iloc[j])
 
             # Step 3: Select the data point with the maximum distance from the
             # nearest centroid as the next centroid.
@@ -87,6 +87,8 @@ class KMeans(object):
             # from the nearest centroid and store it to variable index.
             # Hint: Use pandas.DataFrame.min() and pandas.Series.idxmax()
             # functions.
+            min_distances = distances.min(axis=1)
+            index = min_distances.idxmax()
 
             # Append the selected data point to the set of centroids.
             point = data.iloc[index, self.start_var:self.end_var]
@@ -94,8 +96,29 @@ class KMeans(object):
             self.centroids = pd.concat([self.centroids, point], ignore_index=True)
 
         return self.centroids
+    
+
 
     def get_euclidean_distance(self, point1, point2):
+        try:
+            print('Point1:\n' + str(point1))
+            print('Point2:\n' + str(point2))
+
+            if isinstance(point1, pd.Series) and isinstance(point2, pd.Series):
+                distance = np.sqrt(((point1 - point2) ** 2).sum())
+            elif isinstance(point1, pd.DataFrame) and isinstance(point2, pd.Series):
+                distance = np.sqrt(((point1 - point2) ** 2).sum(axis=1))
+            else:
+                raise ValueError("point1 must be either a Series or DataFrame, and point2 must be a Series.")
+            
+            # Print distance for debugging
+            print('Distance:\n' + str(distance))
+
+            return distance
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return None
         """Returns the Euclidean distance between two data points. These
         data points can be represented as 2 Series objects. This function can
         also compute the Euclidean distance between a list of data points
@@ -125,7 +148,9 @@ class KMeans(object):
 
         # TODO: Implement this function based on the documentation.
         # Hint: Use the pandas.Series.sum() and the numpy.sqrt() functions.
-        pass
+
+
+        
 
     def group_observations(self, data):
         """Returns the clusters of each data point in the dataset given
@@ -148,7 +173,7 @@ class KMeans(object):
         distances = pd.DataFrame()
         sliced_data = data.iloc[:, self.start_var:self.end_var]
         for i in range(self.k):
-            pass
+            distances[i] = self.get_euclidean_distance(sliced_data, self.centroids.iloc[i])
             # TODO: Get the Euclidean distance of the data from each centroid
             # then store it to a column in the DataFrame distances
             # Hint: Use the get_euclidean_distance() function that we have
@@ -157,6 +182,7 @@ class KMeans(object):
         # TODO: get the index of the lowest distance for each data point and
         # assign it to a Series named groups
         # Hint: Use pandas.DataFrame.idxmin() function.
+        groups = distances.idxmin(axis = 1)
 
         return groups.astype('int32')
 
@@ -182,6 +208,8 @@ class KMeans(object):
         # get their mean and store to variable centroids.
         # Hint: use pandas.DataFrame.groupby and
         # pandas.core.groupby.GroupBy.mean functions.
+
+        centroids = grouped_data.groupby('group').mean().iloc[:, self.start_var:self.end_var]
 
         return centroids
 
@@ -216,14 +244,18 @@ class KMeans(object):
             # store it in variable groups.
             # Hint: Use the group_observation() function that we have defined
             # in this class.
+            groups = self.group_observations(data)
 
             # TODO: Adjust the centroids based on the current clusters and
             # store it in variable centroids.
             # Hint: Use the adjust_centroids() function that we have defined
             # in this class.
+            centroids = self.adjust_centroids(data, groups)
 
             # TODO: Check if there are changes with the clustering of the
             # data points.
+            flag_groups = groups.equals(cur_groups)
+            flag_centroids = self.centroids.equals(centroids)
 
             # TODO: Check if there are changes with the values of the centroids
 
